@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+{{THEME}}
+  * { box-sizing: border-box; }
+  body { margin:0; padding:0; }
+
+  #capture-root {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pitch-lines {
+    position: absolute;
+    inset: 0;
+    opacity: 0.15;
+  }
+  .pitch-lines .halfline {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ffffff;
+    transform: translateX(-50%);
+  }
+  .pitch-lines .centercircle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 460px;
+    height: 460px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .pitch-lines .centerspot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    background: #ffffff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .pitch-lines .boxtop {
+    position: absolute;
+    left: 50%;
+    top: -1px;
+    width: 620px;
+    height: 220px;
+    border: 2px solid #ffffff;
+    border-top: none;
+    transform: translateX(-50%);
+  }
+  .pitch-lines .boxbottom {
+    position: absolute;
+    left: 50%;
+    bottom: -1px;
+    width: 620px;
+    height: 220px;
+    border: 2px solid #ffffff;
+    border-bottom: none;
+    transform: translateX(-50%);
+  }
+
+  .content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 80px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1.5px solid var(--accent);
+    color: #cdeedd;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 12px 28px;
+    border-radius: 4px;
+    margin-bottom: 40px;
+  }
+  .badge .dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  .title {
+    color: #ffffff;
+    font-size: 92px;
+    font-weight: 900;
+    line-height: 1.28;
+    letter-spacing: -1px;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.35);
+  }
+
+  .title .line2 {
+    display: block;
+  }
+
+  .underline {
+    margin-top: 36px;
+    width: 140px;
+    height: 5px;
+    background: linear-gradient(90deg, var(--accent-strong), var(--accent));
+    border-radius: 3px;
+  }
+
+  .sub {
+    margin-top: 34px;
+    color: #eaf2ef;
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .ball {
+    position: absolute;
+    bottom: 56px;
+    right: 56px;
+    width: 130px;
+    height: 130px;
+    z-index: 2;
+    opacity: 0.85;
+  }
+</style>
+</head>
+<body>
+  <div id="capture-root">
+    <div class="pitch-lines">
+      <div class="halfline"></div>
+      <div class="centercircle"></div>
+      <div class="centerspot"></div>
+      <div class="boxtop"></div>
+      <div class="boxbottom"></div>
+    </div>
+
+    <svg class="ball" viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="48" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.5"/>
+      <polygon points="50,28 63,38 58,54 42,54 37,38" fill="#ffffff" opacity="0.35"/>
+      <path d="M50,28 L50,10 M63,38 L80,28 M58,54 L68,70 M42,54 L32,70 M37,38 L20,28" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+    </svg>
+
+    <div class="content">
+      <div class="badge">
+        <span class="dot"></span>
+        {{BADGE_TEXT}}
+      </div>
+      <div class="title">
+        {{TITLE_LINE1}}<br>
+        <span class="line2">{{TITLE_LINE2}}</span>
+      </div>
+      <div class="underline"></div>
+      <div class="sub">{{SUBTITLE}}</div>
+    </div>
+  </div>
+</body>
+</html>

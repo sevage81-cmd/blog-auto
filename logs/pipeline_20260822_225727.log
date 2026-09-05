@@ -1,0 +1,10 @@
+파이프라인 전 단계(리서치 → 글쓰기 → 이미지 생성 → 최종 조립)를 완료했습니다.
+
+- 리서치: `output\맨유 2026시즌 전망\research.md` — 감독 교체(캐릭), 리그 3위, 챔스 복귀, 여름 이적, 재정/SCR, 신구장 등 5+ 소스 교차확인
+- 초안: `output\맨유 2026시즌 전망\draft.md` — 스타일/SEO 가이드 준수, 이미지 마커 6개 포함
+- 이미지: `output\맨유 2026시즌 전망\images\thumbnail.png`, `body-1~6.png` (모두 draft.md에 반영 완료)
+- 최종: `output\맨유 2026시즌 전망\final.md`, `final.html`
+
+**final.html**을 브라우저로 열어 확인해보세요: `C:\Users\ITCODY\Desktop\blog\output\맨유 2026시즌 전망\final.html`
+
+참고로 이미지 단계에서 로컬에 Python이 없어(Windows Store 스텁만 존재) 이미 설치된 Node.js Playwright로 동일한 HTML+CSS→PNG 캡처 방식을 수행했습니다. 산출물 규격·품질은 지침과 동일합니다.

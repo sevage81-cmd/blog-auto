@@ -1,0 +1,9 @@
+4단계 파이프라인(리서치→글쓰기→이미지 생성→최종 조립)이 모두 완료됐습니다.
+
+**결과물**: `output/토트넘 2026시즌 전망/`
+- `research.md` — 소스 12개 이상 교차검증 리서치
+- `draft.md` — 스타일/SEO 가이드 반영한 초안
+- `images/` — 대표 1장 + 본문 7장 (thumbnail.png, body-1~7.png)
+- `final.md`, `final.html` — 최종 산출물
+
+`final.html`을 브라우저로 열어 확인해보시기 바랍니다: `C:\Users\ITCODY\Desktop\blog\output\토트넘 2026시즌 전망\final.html`

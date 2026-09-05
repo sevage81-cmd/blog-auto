@@ -1,0 +1,9 @@
+4단계 파이프라인(리서치 → 글쓰기 → 이미지 생성 → 최종 조립)을 모두 완료했습니다.
+
+**결과물**: `output\아스날 2026-27시즌 전망\`
+- `research.md` — 30개 이상 소스 기반 리서치
+- `draft.md` / `final.md` — 완성된 초안·최종 원고
+- `images\` — 대표 이미지 1장 + 본문 이미지 9장
+- `final.html` — 네이버 블로그풍 미리보기
+
+`final.html`을 브라우저로 열어 확인해보세요: `file:///C:/Users/ITCODY/Desktop/blog/output/아스날 2026-27시즌 전망/final.html`

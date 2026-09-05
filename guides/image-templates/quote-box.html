@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+{{THEME}}
+  * { box-sizing: border-box; }
+  body { margin:0; padding:0; }
+
+  #capture-root {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    padding: 52px 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .pitch-lines {
+    position: absolute;
+    inset: 0;
+    opacity: 0.15;
+  }
+  .pitch-lines .centercircle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 480px;
+    height: 480px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .eyebrow {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: #d7e5e1;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 30px;
+  }
+
+  .quote-box {
+    position: relative;
+    z-index: 2;
+    max-width: 920px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-left: 5px solid var(--accent);
+    border-radius: 10px;
+    padding: 30px 42px;
+  }
+  .quote-mark {
+    color: var(--accent);
+    font-size: 46px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .quote-text {
+    color: #ffffff;
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .quote-author {
+    color: #e4efeb;
+    font-size: 16px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div id="capture-root">
+    <div class="pitch-lines"><div class="centercircle"></div></div>
+
+    <div class="eyebrow">{{EYEBROW}}</div>
+
+    <div class="quote-box">
+      <div class="quote-mark">"</div>
+      <div class="quote-text">{{QUOTE_TEXT}}</div>
+      <div class="quote-author">{{QUOTE_AUTHOR}}</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "images": [
+    {
+      "id": "thumbnail",
+      "type": "thumbnail",
+      "theme": "epl-result",
+      "vars": {
+        "BADGE_TEXT": "EPL ROUND REVIEW",
+        "TITLE_LINE1": "리버풀·토트넘",
+        "TITLE_LINE2": "희비 엇갈린 주말",
+        "SUBTITLE": "2026.08.29 EPL 4경기 리뷰"
+      }
+    },
+    {
+      "id": "body-1",
+      "type": "key-points",
+      "theme": "epl-result",
+      "height": 640,
+      "vars": {
+        "HEAD_NAME": "8월 29일 라운드",
+        "HEAD_ROLE": "스코어 요약"
+      },
+      "cards": [
+        { "LABEL": "리버풀 vs 노팅엄", "VALUE": "2-2", "DESC": "안필드 혈투, 82분 극장 동점골" },
+        { "LABEL": "토트넘 vs 뉴캐슬", "VALUE": "0-2", "DESC": "점유율 앞서고도 무득점 패배" },
+        { "LABEL": "본머스 vs 에버턴", "VALUE": "1-1", "DESC": "추가시간 타코스키 헤더 동점" },
+        { "LABEL": "코번트리 vs 헐 시티", "VALUE": "0-1", "DESC": "xG 앞서고도 승격팀에 패배" }
+      ]
+    }
+  ]
+}

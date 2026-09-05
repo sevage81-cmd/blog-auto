@@ -1,0 +1,46 @@
+{
+  "images": [
+    {
+      "id": "thumbnail",
+      "type": "thumbnail",
+      "theme": "epl-preview",
+      "vars": {
+        "BADGE_TEXT": "EPL 매치위크5",
+        "TITLE_LINE1": "이번 주말",
+        "TITLE_LINE2": "EPL 전망",
+        "SUBTITLE": "아스널 vs 첼시, 최대 관심사"
+      }
+    },
+    {
+      "id": "body-1",
+      "type": "comparison-table",
+      "theme": "epl-preview",
+      "height": 740,
+      "vars": {
+        "TITLE_PREFIX": "매치위크5",
+        "TITLE_ACCENT": "주말 대진표",
+        "LEFT_TAG": "토요일",
+        "LEFT_SUB": "7경기",
+        "RIGHT_TAG": "일요일",
+        "RIGHT_SUB": "2경기",
+        "SCORE_LEFT_LABEL": "총 경기",
+        "SCORE_LEFT_VALUE": "7경기",
+        "SCORE_RIGHT_LABEL": "총 경기",
+        "SCORE_RIGHT_VALUE": "2경기"
+      },
+      "left_rows": [
+        { "PLAYER": "뉴캐슬 vs 본머스", "FROM": "", "FEE": "" },
+        { "PLAYER": "브렌트포드 vs 선덜랜드", "FROM": "", "FEE": "" },
+        { "PLAYER": "브라이턴 vs 리즈", "FROM": "", "FEE": "" },
+        { "PLAYER": "풀럼 vs 크리스탈 팰리스", "FROM": "", "FEE": "" },
+        { "PLAYER": "맨시티 vs 코번트리", "FROM": "에티하드", "FEE": "" },
+        { "PLAYER": "노팅엄 포레스트 vs 토트넘", "FROM": "", "FEE": "" },
+        { "PLAYER": "헐 시티 vs 아스톤 빌라", "FROM": "", "FEE": "" }
+      ],
+      "right_rows": [
+        { "PLAYER": "에버턴 vs 맨유", "FROM": "", "FEE": "" },
+        { "PLAYER": "아스널 vs 첼시", "FROM": "에미레이츠", "FEE": "빅매치" }
+      ]
+    }
+  ]
+}

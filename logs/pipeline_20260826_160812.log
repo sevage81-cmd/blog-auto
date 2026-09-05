@@ -1,0 +1,8 @@
+4단계 파이프라인이 모두 끝났습니다.
+
+- 리서치: `output\오늘의 저녁메뉴 추천\research.md` (소스 20개)
+- 초안: `output\오늘의 저녁메뉴 추천\draft.md`
+- 이미지: `output\오늘의 저녁메뉴 추천\images\` (썸네일 + 본문 5장)
+- 최종본: `output\오늘의 저녁메뉴 추천\final.md`, `final.html`
+
+`final.html`을 브라우저로 열어 확인해보시면 됩니다.

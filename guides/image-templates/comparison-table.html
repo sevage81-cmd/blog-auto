@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+{{THEME}}
+  * { box-sizing: border-box; }
+  body { margin:0; padding:0; }
+
+  #capture-root {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    padding: 52px 64px 44px;
+  }
+
+  .title {
+    color: #ffffff;
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+    margin-bottom: 26px;
+  }
+  .title .accent { color: var(--accent); }
+
+  .cols {
+    display: flex;
+    gap: 28px;
+  }
+
+  .col {
+    flex: 1;
+    border-radius: 6px;
+    padding: 22px 24px;
+  }
+
+  .col.in {
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    border-top: 3px solid var(--accent);
+  }
+  .col.out {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-top: 3px solid #cdddd7;
+  }
+
+  .col-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .col-head .tag {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 1px;
+  }
+  .col.in .tag { color: var(--accent); }
+  .col.out .tag { color: #cbd5c9; }
+
+  .col-head .sub {
+    font-size: 13px;
+    font-weight: 700;
+    color: #cdddd7;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .row:last-child { border-bottom: none; }
+
+  .row .player {
+    color: #ffffff;
+    font-size: 19px;
+    font-weight: 800;
+  }
+  .row .from {
+    color: #cdddd7;
+    font-size: 14px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .row .fee {
+    font-size: 19px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  .col.in .fee { color: var(--accent); }
+  .col.out .fee { color: #b9c4bf; }
+
+  .scoreboard {
+    position: relative;
+    margin-top: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+  }
+
+  .score-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 34px;
+    border-radius: 4px;
+  }
+  .score-box.in-box {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1.5px solid var(--accent);
+  }
+  .score-box.out-box {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid #cdddd7;
+  }
+  .score-box .lbl {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .score-box.in-box .lbl { color: #cdeedd; }
+  .score-box.out-box .lbl { color: #dbe8e4; }
+
+  .score-box .num {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+  }
+  .score-box.in-box .num { color: var(--accent); }
+  .score-box.out-box .num { color: #e2e8e5; }
+
+  .vs {
+    color: #cdddd7;
+    font-size: 18px;
+    font-weight: 900;
+  }
+</style>
+</head>
+<body>
+  <div id="capture-root">
+    <div class="title">{{TITLE_PREFIX}} <span class="accent">{{TITLE_ACCENT}}</span></div>
+
+    <div class="cols">
+      <div class="col in">
+        <div class="col-head">
+          <span class="tag">{{LEFT_TAG}}</span>
+          <span class="sub">{{LEFT_SUB}}</span>
+        </div>
+{{LEFT_ROWS}}
+      </div>
+
+      <div class="col out">
+        <div class="col-head">
+          <span class="tag">{{RIGHT_TAG}}</span>
+          <span class="sub">{{RIGHT_SUB}}</span>
+        </div>
+{{RIGHT_ROWS}}
+      </div>
+    </div>
+
+    <div class="scoreboard">
+      <div class="score-box in-box">
+        <span class="lbl">{{SCORE_LEFT_LABEL}}</span>
+        <span class="num">{{SCORE_LEFT_VALUE}}</span>
+      </div>
+      <span class="vs">VS</span>
+      <div class="score-box out-box">
+        <span class="lbl">{{SCORE_RIGHT_LABEL}}</span>
+        <span class="num">{{SCORE_RIGHT_VALUE}}</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
