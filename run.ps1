@@ -1,16 +1,39 @@
-﻿Add-Type -AssemblyName Microsoft.VisualBasic
+﻿param(
+    [string]$Topic,
+    [switch]$Today   # 스케줄러용: 주제를 "오늘 주제"로 고정 (CLAUDE.md가 요일별 주제 자동 적용).
+)
+
+Add-Type -AssemblyName Microsoft.VisualBasic
 Add-Type -AssemblyName System.Windows.Forms
 
-$topic = [Microsoft.VisualBasic.Interaction]::InputBox('블로그 글 주제를 입력하세요', '블로그 자동화', '')
+# -Today 또는 -Topic 이 있으면 비대화형(스케줄러) 모드: 주제 입력창·팝업 없이 바로 실행.
+# 요일 계산을 모델에 맡기면 미래 날짜 요일을 틀리게 잡는다(2026-09-06 일요일을
+# 토요일로 계산 -> "돌아오는 주말 전망"을 써버린 사례). Windows가 계산한 실제
+# 요일명을 주제로 넘기고, 프롬프트에도 오늘 날짜·요일을 못박는다.
+$dowKo = @{ Sunday='일요일'; Monday='월요일'; Tuesday='화요일'; Wednesday='수요일'; Thursday='목요일'; Friday='금요일'; Saturday='토요일' }
+$todayKo = $dowKo[[string](Get-Date).DayOfWeek]
+$todayDate = Get-Date -Format 'yyyy-MM-dd'
+if ($Today) { $Topic = $todayKo }
+$interactive = [string]::IsNullOrWhiteSpace($Topic)
 
-if ([string]::IsNullOrWhiteSpace($topic)) {
-    exit
+if ($interactive) {
+    $topic = [Microsoft.VisualBasic.Interaction]::InputBox('블로그 글 주제를 입력하세요', '블로그 자동화', '')
+    if ([string]::IsNullOrWhiteSpace($topic)) {
+        exit
+    }
+} else {
+    $topic = $Topic
 }
 
 $blogDir = $PSScriptRoot
 $topic = $topic -replace '"', ''
 $prompt = @"
 $topic 주제로 블로그 자동화 파이프라인을 CLAUDE.md 지침대로 처음부터 끝까지 실행해줘.
+
+[오늘 날짜 - 이 값을 그대로 신뢰하고 요일을 다시 계산하지 말 것]
+- 오늘은 $todayDate, $todayKo 이다.
+- CLAUDE.md 요일별 주제 표에서 "$todayKo" 행을 그대로 사용하라.
+- "가장 최근 토요일", "가장 최근 일요일", "돌아오는 주말", "지난 주말" 같은 표현은 전부 이 오늘 날짜($todayDate, $todayKo)를 기준으로 해석하라. 예: 오늘이 일요일이면 "가장 최근 토요일"은 바로 어제다.
 
 [비대화형 실행 규칙 - 반드시 지킬 것]
 - 이 실행은 비대화형이라 되물어도 답할 사람이 없다. 주제가 모호하거나 정보가 부족해도 절대 되묻지 말고 네가 알아서 구체화해서 바로 진행해.
@@ -30,6 +53,20 @@ $errFile = Join-Path $logDir "pipeline_${stamp}.err.log"
 
 $startTime = Get-Date
 
+# secrets.env (repo 루트, .gitignore 처리됨) 의 KEY=value 줄을 환경변수로 올린다.
+# 예약(-p) 실행에서 claude 하위 프로세스·서브에이전트·파이썬 스크립트가
+# GEMINI_API_KEY 등을 상속받게 하려면 여기서 넣어줘야 한다.
+$secretsFile = Join-Path $blogDir 'secrets.env'
+if (Test-Path $secretsFile) {
+    Get-Content $secretsFile -Encoding UTF8 | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith('#') -and $line.Contains('=')) {
+            $k, $v = $line.Split('=', 2)
+            Set-Item -Path "Env:$($k.Trim())" -Value $v.Trim()
+        }
+    }
+}
+
 # 비대화형(-p) 실행에서 턴이 끝난 시점에 백그라운드 작업이 남아 있으면 claude가 기본 600초 뒤
 # 그 작업들을 강제 종료하고 나가버린다(최종 파일 미생성). 기본 10분 -> 30분으로 여유를 준다
 # (완전 무한 대기(0)는 진짜 멈춘 작업일 때 완료 팝업도 영영 안 떠서 배제).
@@ -47,26 +84,33 @@ try {
         -RedirectStandardError $errFile `
         -PassThru
 
-    [System.Windows.Forms.MessageBox]::Show(
-        '에이전트 수행 시작합니다.',
-        '블로그 자동화',
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.Forms.MessageBoxIcon]::Information
-    ) | Out-Null
+    if ($interactive) {
+        [System.Windows.Forms.MessageBox]::Show(
+            '에이전트 수행 시작합니다.',
+            '블로그 자동화',
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Information
+        ) | Out-Null
+    }
 
     # 완료 감시는 별도 프로세스로 분리 -> 이 스크립트(및 InputBox 창)가 끝나도 계속 살아서 완료 팝업을 띄운다.
     # 에이전트가 모호한 주제를 알아서 구체화해 폴더명이 입력값과 달라질 수 있으므로,
     # 경로를 미리 예측하지 않고 output 전체에서 시작 시각 이후 생긴 final.html을 찾도록 넘긴다.
     $outputDir = Join-Path $blogDir 'output'
     $monitorScript = Join-Path $blogDir 'monitor.ps1'
-    Start-Process -FilePath 'powershell' `
-        -ArgumentList "-NoProfile -WindowStyle Hidden -File `"$monitorScript`" -ProcId $($proc.Id) -OutputDir `"$outputDir`" -StartTime `"$($startTime.ToString('o'))`" -ErrFile `"$errFile`" -OutFile `"$outFile`"" `
-        -WindowStyle Hidden
+    $monitorArgs = "-NoProfile -WindowStyle Hidden -File `"$monitorScript`" -ProcId $($proc.Id) -OutputDir `"$outputDir`" -StartTime `"$($startTime.ToString('o'))`" -ErrFile `"$errFile`" -OutFile `"$outFile`""
+    if (-not $interactive) { $monitorArgs += " -Quiet" }
+    Start-Process -FilePath 'powershell' -ArgumentList $monitorArgs -WindowStyle Hidden
 } catch {
-    [System.Windows.Forms.MessageBox]::Show(
-        "실행 실패:`n$($_.Exception.Message)",
-        '블로그 자동화 - 오류',
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.Forms.MessageBoxIcon]::Error
-    ) | Out-Null
+    if ($interactive) {
+        [System.Windows.Forms.MessageBox]::Show(
+            "실행 실패:`n$($_.Exception.Message)",
+            '블로그 자동화 - 오류',
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Error
+        ) | Out-Null
+    } else {
+        "$(Get-Date -Format o)  실행 실패: $($_.Exception.Message)" |
+            Out-File -FilePath (Join-Path $logDir "launch-error_${stamp}.log") -Encoding UTF8
+    }
 }

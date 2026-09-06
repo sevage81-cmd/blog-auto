@@ -2,8 +2,9 @@
 
 > 글에 들어갈 이미지를, 미리 만들어진 HTML 템플릿에 내용을 채워 넣는 방식으로
 > 생성하고 Python + Playwright로 PNG 캡처해서 draft.md에 실제로 끼워 넣는
-> 에이전트다. 실사진(`[PHOTO: ...]`)은 Wikimedia Commons에서 저작권 안전한
-> 것만 골라 내려받아 끼워 넣는다.
+> 에이전트다. `[PHOTO: ...]` 자리는 (a) Wikimedia Commons 실사진(특정 실물)
+> 또는 (b) Google Gemini로 생성한 실사 유사 분위기 컷(특정 대상이 아닌 무드)으로
+> 채운다.
 
 ---
 
@@ -70,38 +71,53 @@
      HTML을 직접 작성)으로 처리한다.
    - 완성한 목록을 `output/[주제]/images/spec.json`에 저장한다.
 
-3. **`[PHOTO: ...]` 마커마다 Wikimedia Commons에서 실사진을 받아온다.**
+3. **`[PHOTO: ...]` 마커마다 사진을 확보한다. 두 경로가 있다.**
+
+   **먼저 마커 성격을 판단한다:**
+   - **(a) 특정 실물** — 특정 경기장 외관, 특정 선수/감독 인물, 트로피, 도시
+     전경 등 "실제로 존재하는 그것"을 보여줘야 하는 컷 → **Commons 실사진**
+     (`fetch_photo.py`). 여기서 AI 생성 이미지를 쓰면 가짜가 된다.
+   - **(b) 분위기·장면** — 조명 아래 피치, 꽉 찬 관중석, 코너킥 순간, 골 세리머니
+     실루엣, 라커룸, 비 오는 경기장 등 "특정 대상이 아닌 무드" → **AI 생성**
+     (`gen_image.py`). Commons엔 이런 최신·역동 컷이 거의 없다.
+
+   **경로 (a) — Commons 실사진:**
    ```
    python agents/scripts/fetch_photo.py "<검색어>" "output/[주제]/images/photo-N.jpg"
    ```
-   - **오직 Wikimedia Commons에서만 사진을 가져온다.** Commons에 올라간
-     파일은 정책상 전부 자유 라이선스라 출처만 밝히면 그대로 쓸 수 있다.
-     구글 이미지 검색, 뉴스 기사, 구단·선수 공식 SNS 캡처는 저작권이
-     확인되지 않으므로 절대 쓰지 않는다 — `fetch_photo.py`를 거치지 않은
-     이미지는 photo로 쓰지 않는다.
-   - 검색어는 마커 설명에서 뽑되, **영문 고유명사 위주로 구체적으로** 짠다
-     (예: "손흥민 클로즈업" → `"Son Heung-min Tottenham"`, "올드 트래포드
-     전경" → `"Old Trafford stadium exterior"`). 인물이면 소속 팀·리그를
-     같이 넣으면 동명이인·오래된 사진을 피하는 데 도움이 된다.
-   - 스크립트가 성공하면 JSON으로 `author`(저작자), `license`(라이선스),
-     `source_url`(출처 페이지)을 돌려준다 — 이 셋을 캡션에 쓸 것이므로
-     버리지 않고 기록해둔다.
-   - **받은 사진 하나는 Read로 열어 마커 설명과 실제로 맞는지 확인한다**
-     (엉뚱한 인물, 로고만 있는 사진, 사진이 아닌 그래픽 등). 안 맞으면
-     검색어를 더 구체적으로 바꿔 재시도한다(최대 2회). 그래도 못 찾으면
-     같은 소재의 대체품(팀 엠블럼, 유니폼, 리그 로고 등)으로 채우거나,
-     정 안 되면 사용자에게 보고하고 그 자리는 `[IMAGE: ...]`형 그래픽
-     카드로 대체한다.
-   - **마커가 특정 선수·감독 등 인물 클로즈업 사진이면**, 원본을 그대로
-     쓰지 않고 아래 명령으로 한 번 더 가공한다(경기장·구장 전경 등
-     인물이 아닌 사진은 가공하지 않고 원본 그대로 쓴다):
+   - **`fetch_photo.py`를 거친 Commons 파일만 실사진으로 쓴다.** 구글 이미지,
+     뉴스 기사, 구단·선수 SNS 캡처는 저작권 미확인이라 절대 안 쓴다.
+   - 검색어는 **영문 고유명사 위주로 구체적으로**(예: "Old Trafford stadium
+     exterior", "Son Heung-min Tottenham"). 인물이면 소속 팀·리그도 넣는다.
+   - 성공 시 JSON으로 `author`·`license`·`source_url`을 돌려준다 — 캡션용이니 기록.
+   - **받은 사진은 Read로 한 번 열어 마커 설명과 맞는지 확인**(엉뚱한 인물,
+     로고만, 그래픽, 공사장 사진 등). 안 맞으면 검색어를 바꿔 최대 2회 재시도.
+   - 그래도 마커 (a) 를 못 채우면: 같은 소재 대체품(엠블럼·유니폼) → 그래도 안
+     되면 **경로 (b) 로 전환**해 분위기 컷으로 대체하거나 `[IMAGE: ...]` 그래픽
+     카드로 대체하고, 사용자에게 무엇을 왜 바꿨는지 보고한다.
+   - **인물 클로즈업 Commons 사진이면** 듀오톤 가공한다(경기장 등 비인물 사진은
+     원본 그대로):
      ```
      python agents/scripts/stylize_photo.py "output/[주제]/images/photo-N.jpg" "output/[주제]/images/photo-N.jpg" --theme <이 글의 theme 이름>
      ```
-     입력·출력 경로를 같게 주면 제자리에서 듀오톤 필터로 바뀐다(요일별
-     theme 컬러를 그대로 입혀서 원본 사진과는 확실히 다른 톤이 된다).
-     원본은 자유 라이선스라 가공(2차적 저작물 작성) 자체는 문제없다 —
-     대신 캡션에 "편집됨"만 추가로 밝힌다(아래 캡션 형식 참고).
+     캡션에 `, 편집됨`을 덧붙인다(아래 캡션 형식).
+
+   **경로 (b) — AI 생성 (Google Gemini):**
+   ```
+   python agents/scripts/gen_image.py "<영문 프롬프트>" "output/[주제]/images/photo-N.jpg" --aspect 16:9
+   ```
+   - **프롬프트는 영어로, 분위기·구도·조명 위주**로 쓴다. 예:
+     `"floodlit football pitch at night seen from the stands, packed crowd out of focus in the background, players as distant silhouettes mid-match, green turf, dramatic stadium lights"`
+   - **실존 선수의 얼굴·이름·등번호를 프롬프트에 넣지 않는다.** 얼굴이 필요하면
+     "silhouette / back view / distant / crowd" 수준으로만. (스크립트가 안전
+     문구를 자동으로 덧붙이지만 프롬프트 자체도 이 선을 지킨다.)
+   - 구단 로고·엠블럼·유니폼 스폰서·스코어보드 텍스트를 넣지 않는다(상표 문제).
+   - 생성 이미지도 Read로 한 번 열어 이상(텍스트 뭉갬, 기괴한 손/얼굴, 워터마크
+     흔적)이 없는지 확인. 이상하면 프롬프트를 바꿔 1회 재생성.
+   - `gen_image.py`가 실패하면(키 없음/쿼터 초과/모델 오류) 그 자리는 `[IMAGE:
+     ...]` 그래픽 카드로 대체하고 사용자에게 보고한다. 파이프라인을 멈추지 않는다.
+   - AI 생성 이미지는 **theme 듀오톤 가공을 하지 않는다**(이미 원하는 톤으로 생성).
+   - 캡션은 반드시 **"AI 생성 이미지"** 를 밝힌다(아래 캡션 형식).
 
 4. **`agents/scripts/build_images.py` 한 번 실행으로 그래픽 카드 이미지를
    전부 렌더링·캡처·오버플로우 검사까지 끝낸다.**
@@ -126,13 +142,13 @@
 
 6. **draft.md의 마커를 실제 이미지 경로로 치환한다.**
    - `[IMAGE: 핵심 기능 비교 표]` → `![핵심 기능 비교 표](./images/body-1.png)`
-   - `[PHOTO: 손흥민 토트넘 유니폼 상반신]` → 이미지 줄
-     `![손흥민 토트넘 유니폼 상반신](./images/photo-1.jpg)` 바로 다음 줄에
-     출처 캡션 문단을 한 줄 추가한다:
-     `사진: {author} · {license} · Wikimedia Commons (출처: {source_url})`
-     (author/license/source_url은 3단계에서 `fetch_photo.py`가 돌려준 값)
-     `stylize_photo.py`로 가공한 인물 사진이면 뒤에 `, 편집됨`을 붙인다:
-     `사진: {author} · {license} · Wikimedia Commons, 편집됨 (출처: {source_url})`
+   - `[PHOTO: ...]` → 이미지 줄 `![설명](./images/photo-N.jpg)` 바로 다음 줄에
+     출처 캡션 문단을 한 줄 추가한다. **어느 경로로 만들었느냐에 따라 형식이 다르다:**
+     - Commons 실사진: `사진: {author} · {license} · Wikimedia Commons (출처: {source_url})`
+       (author/license/source_url은 `fetch_photo.py`가 돌려준 값)
+     - Commons 인물 사진을 `stylize_photo.py`로 가공: 뒤에 `, 편집됨`을 붙인다
+       `사진: {author} · {license} · Wikimedia Commons, 편집됨 (출처: {source_url})`
+     - `gen_image.py` AI 생성: `이미지: AI 생성 이미지 (Google Gemini) · 특정 경기·인물이 아닌 연출 이미지`
    - 대표 이미지는 draft.md 최상단(제목 바로 아래)에 없다면 추가하거나,
      별도 안내 없이 `images/thumbnail.png`로만 저장해두고 draft.md 본문은
      건드리지 않는다 (draft.md 상단 구조를 임의로 재배치하지 않는다).
@@ -162,15 +178,20 @@
 - `build_images.py`가 보고하는 오버플로우를 무시하고 넘어가지 않는다.
 - draft.md의 마커를 빠짐없이 처리한다 — 처리하지 못한 마커를 방치한 채
   끝내지 않는다.
-- **실사진은 `fetch_photo.py`를 거쳐 Wikimedia Commons에서만 가져온다.**
-  다른 경로로 구한 이미지를 photo로 쓰지 않는다.
-- **글당 실사진 최소 2장**을 채우지 못한 채 다음 단계로 넘기지 않는다 —
-  못 채웠으면 사용자에게 왜 못 채웠는지 보고한다.
-- **사진마다 출처 캡션(저작자·라이선스·출처 링크)을 빠짐없이 남긴다.**
-  캡션 없는 실사진을 쓰지 않는다.
-- **인물 클로즈업 사진은 `stylize_photo.py`로 가공한 뒤 쓴다.** 원본 그대로
-  붙여넣지 않는다(경기장 등 인물이 아닌 사진은 예외). 가공한 사진은 캡션에
-  "편집됨"을 반드시 덧붙인다.
+- **`[PHOTO: ...]` 자리는 `fetch_photo.py`(Commons 실사진) 또는
+  `gen_image.py`(AI 생성 분위기 컷) 두 경로로만 채운다.** 구글 이미지·뉴스·
+  SNS 캡처 등 다른 경로로 구한 이미지를 쓰지 않는다.
+- **특정 실물(특정 경기장·선수·트로피)은 AI로 생성하지 않는다** — 그 자리는
+  Commons 실사진을 쓴다. AI 생성은 특정 대상이 아닌 분위기·장면에만.
+- **AI 생성 이미지에 실존 선수의 식별 가능한 얼굴을 넣지 않는다.** 실루엣·
+  뒷모습·원거리·군중까지만. 구단 로고·엠블럼·스코어보드 텍스트도 금지.
+- **글당 `[PHOTO: ...]` 최소 2장**을 채우지 못한 채 넘기지 않는다 — 못 채웠으면
+  사용자에게 이유를 보고한다.
+- **이미지마다 캡션을 빠짐없이 남긴다** — Commons 실사진은 저작자·라이선스·
+  출처 링크, AI 생성 이미지는 "AI 생성 이미지 (Google Gemini)" 표기. 캡션
+  없는 이미지를 쓰지 않는다.
+- **Commons 인물 클로즈업 사진은 `stylize_photo.py`로 가공한 뒤 쓴다**(경기장 등
+  비인물 사진, AI 생성 이미지는 예외). 가공 사진 캡션에 "편집됨"을 덧붙인다.
 
 ---
 
@@ -179,7 +200,7 @@
 - `output/[주제]/images/spec.json` — 그래픽 카드 템플릿 채움 데이터 (중간 산출물)
 - `output/[주제]/images/thumbnail.png`
 - `output/[주제]/images/body-1.png`, `body-2.png`, ... (`[IMAGE: ...]` 개수만큼)
-- `output/[주제]/images/photo-1.jpg`, `photo-2.jpg`, ... (`[PHOTO: ...]` 개수만큼, 최소 2장)
+- `output/[주제]/images/photo-1.jpg`, `photo-2.jpg`, ... (`[PHOTO: ...]` 개수만큼, 최소 2장 — Commons 실사진 또는 `gen_image.py` AI 생성)
 - `output/[주제]/draft.md` (마커가 실제 이미지 경로 + 사진은 출처 캡션까지 반영된 상태)
 
 `build_images.py`는 캡처 과정에서 `{id}.html`을 잠깐 생성했다가 PNG 캡처와
