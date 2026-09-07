@@ -25,6 +25,20 @@ DEFAULT_SIZE = {
     "comparison-table": (1200, 620),
     "key-points": (1200, 620),
     "quote-box": (1200, 460),
+    "player-card": (900, 1200),
+}
+
+# 선수 카드 무드 → 얼굴 필터 + 오버레이. good=밝고 따뜻, bad=어둡고 차갑게.
+CARD_MOOD = {
+    "good": (
+        "saturate(1.15) brightness(1.07) contrast(1.03)",
+        "radial-gradient(circle at 50% 32%, rgba(255,210,130,0.28), rgba(255,170,80,0) 68%)",
+    ),
+    "bad": (
+        "grayscale(0.45) brightness(0.78) contrast(1.06)",
+        "linear-gradient(180deg, rgba(18,32,66,0.30) 0%, rgba(8,12,26,0.52) 100%)",
+    ),
+    "neutral": ("saturate(1) brightness(1)", "transparent"),
 }
 
 # 요일별 이미지 테마 — thumbnail + 본문 이미지 공통. image-make가 spec의 각
@@ -94,6 +108,11 @@ def build_html(spec: dict) -> str:
         values["RIGHT_ROWS"] = render_block(row_frag, spec.get("right_rows", []))
     elif img_type == "key-points":
         values["CARDS"] = render_block(FRAGMENT_FILES[img_type]["cards"], spec.get("cards", []))
+    elif img_type == "player-card":
+        face_filter, overlay = CARD_MOOD.get(spec.get("mood", "neutral"), CARD_MOOD["neutral"])
+        values.setdefault("FACE", spec.get("face", ""))
+        values.setdefault("FACE_FILTER", face_filter)
+        values.setdefault("MOOD_OVERLAY", overlay)
 
     return fill(template, values), height
 
@@ -114,6 +133,13 @@ async def capture_all(images_dir: Path, specs: list):
             scroll_height = await root.evaluate("el => el.scrollHeight")
             await page.close()
             html_path.unlink()
+
+            # 선수 카드의 원본 얼굴 파일(images/face-*.jpg)은 중간 산출물이라 캡처 후 삭제
+            face = spec.get("face", "")
+            if face.startswith("face-"):
+                fp = images_dir / face
+                if fp.exists():
+                    fp.unlink()
 
             overflow = scroll_height > declared_height + 2
             return spec["id"], overflow, scroll_height, declared_height

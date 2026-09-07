@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+{{THEME}}
+  * { box-sizing: border-box; }
+  body { margin:0; padding:0; }
+
+  #capture-root {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    position: relative;
+    overflow: hidden;
+    background: #e9ebee;
+    font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 바깥 흰 테두리 카드 */
+  .card {
+    position: relative;
+    width: calc({{WIDTH}}px - 96px);
+    height: calc({{HEIGHT}}px - 96px);
+    background: #ffffff;
+    border-radius: 30px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+    padding: 22px;
+  }
+
+  /* 초록 안쪽 프레임 */
+  .frame {
+    position: absolute;
+    inset: 22px;
+    border: 3px solid var(--accent-strong);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .corner {
+    position: absolute;
+    width: 34px; height: 34px;
+    border: 4px solid var(--accent);
+    z-index: 8;
+  }
+  .corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+  .corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+  .corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+  .corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+  /* 상단: 얼굴 + 이름 */
+  .photo {
+    position: relative;
+    flex: 1 1 62%;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0) 40%, rgba(0,0,0,0.10) 100%),
+      linear-gradient(150deg, #c9ccd1 0%, #eef0f2 55%, #d7dade 100%);
+    overflow: hidden;
+  }
+  .photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 16%;
+    filter: {{FACE_FILTER}};
+  }
+  /* 무드 오버레이: good=따뜻하게, bad=차갑고 어둡게, neutral=없음 */
+  .photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: {{MOOD_OVERLAY}};
+  }
+  .name {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 20px 26px 30px;
+    background: linear-gradient(180deg, rgba(20,25,35,0.72) 0%, rgba(20,25,35,0) 100%);
+    color: #ffffff;
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1.05;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    z-index: 3;
+  }
+
+  /* 크레스트 뱃지 (상표 로고 아님 — 구단 약칭 텍스트) */
+  .crest {
+    position: absolute;
+    left: 50%;
+    top: 62%;
+    transform: translate(-50%, -50%);
+    width: 92px; height: 92px;
+    border-radius: 50%;
+    background: var(--accent-strong);
+    border: 4px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    z-index: 4;
+  }
+
+  /* 하단: 스탯 패널 */
+  .stat {
+    flex: 0 0 38%;
+    position: relative;
+    background: var(--bg);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 44px 30px 30px;
+    overflow: hidden;
+  }
+  .stat .watermark {
+    position: absolute;
+    right: -30px;
+    bottom: -40px;
+    font-size: 190px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.06);
+    line-height: 1;
+    letter-spacing: -6px;
+    pointer-events: none;
+  }
+  .stat .headline {
+    position: relative;
+    z-index: 2;
+    font-size: 76px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1.05;
+  }
+  .stat .sub {
+    position: relative;
+    z-index: 2;
+    margin-top: 14px;
+    font-size: 26px;
+    font-weight: 600;
+    color: #e7efe9;
+  }
+  .stat .num {
+    position: absolute;
+    right: 26px;
+    bottom: 18px;
+    font-size: 40px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.65);
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+  <div id="capture-root">
+    <div class="card">
+      <div class="frame">
+        <div class="photo">
+          <img src="{{FACE}}" alt="{{NAME}}">
+          <div class="name">{{NAME}}</div>
+        </div>
+
+        <div class="crest">{{CLUB_SHORT}}</div>
+
+        <div class="stat">
+          <div class="watermark">{{NUMBER}}</div>
+          <div class="headline">{{STAT}}</div>
+          <div class="sub">{{SUB}}</div>
+          <div class="num">{{NUMBER}}</div>
+        </div>
+
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

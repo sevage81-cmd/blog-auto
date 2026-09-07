@@ -48,9 +48,7 @@
    적으면 write.md 위반이니 사용자에게 알리고, 자연스러운 자리를 골라
    보충한다. 그래픽 카드가 3개 이상이면 데이터성 아닌 카드를
    `[PHOTO: 분위기 컷]`으로 바꾼다.)
-   - `[CARD: ...]`는 아래 "## 선수 카드" 절차로 처리한다 (**gemini 전용**,
-     크레딧 없으면 그 마커만 `[PHOTO: 선수명]` Commons 실사진으로 대체하고
-     사용자에게 보고).
+   - `[CARD: ...]`는 아래 3-C 절차로 처리한다 (HTML 템플릿 + 얼굴 사진, 무료).
 
 2. **마커마다 템플릿 종류를 고르고, 내용을 뽑아 `spec.json`을 만든다.**
    (서브에이전트 호출 없이 이 에이전트가 직접 한 번에 처리한다 — 각 마커의
@@ -137,29 +135,42 @@
    - AI 생성 이미지는 **theme 듀오톤 가공을 하지 않는다**(이미 원하는 톤으로 생성).
    - 캡션은 반드시 **"AI 생성 이미지"** 를 밝힌다(아래 캡션 형식).
 
-3-C. **`[CARD: ...]` 마커마다 선수 카드를 생성한다 (gemini 전용).**
+3-C. **`[CARD: ...]` 마커마다 선수 카드를 만든다 (HTML 템플릿 방식, 무료).**
 
    마커 형식: `[CARD: 한글명 | 영문명 | 소속구단 | 등번호 | 스탯 | 하단문구 | 평가]`
    예: `[CARD: 브루누 페르난드스 | Bruno Fernandes | 맨체스터 유나이티드 | 8 | 1골 1도움 | vs 에버턴 · 프리미어리그 | good]`
-   - `평가`는 `good`(호평·좋은 활약) / `bad`(혹평·부진) / `neutral`.
-   - 필드가 비어 있으면(등번호·영문명 등) 알 만한 건 채우고, 모르면 빈 칸으로 둔다.
+   - `평가` = `good`(좋은 활약 → 밝은 톤) / `bad`(부진 → 어두운 톤) / `neutral`.
    - 스탯·하단문구는 **research.md 기준 사실만** — 지어내지 않는다.
+   - 필드가 비면(등번호 등) 알 만한 건 채우고 모르면 빈 칸.
 
-   실행:
+   (1) **얼굴 이미지를 확보한다** → `output/[주제]/images/face-N.jpg`
+   - **먼저 `user-faces/` 폴더**를 본다. `user-faces/<한글명>.png|jpg` 또는
+     `user-faces/<영문명>.png|jpg` 가 있으면 그걸 `face-N.jpg`로 복사한다
+     (사용자가 최신 유니폼 두상으로 준비해 둔 것 — 최우선).
+   - 없으면 `python agents/scripts/fetch_photo.py "<영문명> <구단 or 국적> portrait" "output/[주제]/images/face-N.jpg" --width 900`
+     로 Commons에서 받는다. 받은 사진을 **Read로 한 번 열어** 인물이 맞는지,
+     얼굴이 프레임 위쪽에 잡히는지 확인. 아니면 검색어 바꿔 1회 재시도.
+   - author·license·source_url 기록(캡션용).
+
+   (2) **spec.json 에 `player-card` 항목을 추가한다:**
+   ```json
+   { "id": "card-1", "type": "player-card", "theme": "<요일 테마>", "mood": "good",
+     "face": "face-1.jpg",
+     "vars": { "NAME": "BRUNO FERNANDES", "STAT": "1골 1도움",
+               "SUB": "vs 에버턴 · 프리미어리그", "NUMBER": "8", "CLUB_SHORT": "맨유" } }
    ```
-   python agents/scripts/gen_image.py --card "output/[주제]/images/card-N.png" \
-     --player "브루누 페르난드스" --player-en "Bruno Fernandes" \
-     --club "맨체스터 유나이티드" --number 8 \
-     --stat "1골 1도움" --sub "vs 에버턴 · 프리미어리그" --mood good
-   ```
-   - `guides/image-templates/player-card-ref.png` 스타일을 그대로 따르고,
-     구단 **최신(2025-26) 유니폼** + 평가에 맞는 표정으로 생성된다.
-   - 생성 이미지를 Read로 한 번 열어 확인 — 얼굴이 딴 사람, 텍스트 깨짐,
-     유니폼이 옛날 버전이면 프롬프트(스탯/구단/평가) 그대로 1회 재생성.
-   - `{"error": "gemini 429 ..."}`(크레딧 없음)면: **그 마커를
-     `[PHOTO: 선수명]` Commons 실사진으로 대체**하고(듀오톤 가공), 사용자에게
-     "선수 카드는 Gemini 크레딧이 있어야 생성된다"고 보고. 파이프라인은 멈추지 않는다.
-   - 캡션: `이미지: AI 생성 선수 카드 (Google Gemini) · 스탯은 실제 기록`
+   - `NAME` = 영문명 대문자(없으면 한글명). `CLUB_SHORT` = 짧은 구단 약칭(맨유/아스날/첼시 등).
+   - `mood` 는 마커의 `평가` 값. `face` 는 (1)에서 만든 파일명.
+   - `build_images.py`(4단계)가 다른 이미지와 함께 렌더한다 → `card-1.png`.
+     face-N.jpg 는 캡처 후 스크립트가 자동 삭제한다.
+
+   (3) 캡션:
+   - user-faces 사용: `이미지: 선수 카드 · 얼굴 사진 사용자 제공`
+   - Commons 사용: `이미지: 선수 카드 · 얼굴 사진 {author} · {license} · Wikimedia Commons ({source_url})`
+
+   (참고) `GEMINI_API_KEY` + 결제 크레딧이 있으면 `gen_image.py --card` 로
+   레퍼런스(`player-card-ref.png`) 스타일의 **AI 생성 카드**(진짜 표정·최신
+   유니폼)도 만들 수 있다. 기본은 위 HTML 템플릿 방식(무료·자동).
 
 4. **`agents/scripts/build_images.py` 한 번 실행으로 그래픽 카드 이미지를
    전부 렌더링·캡처·오버플로우 검사까지 끝낸다.**
@@ -193,7 +204,7 @@
      - `gen_image.py` AI 생성: `이미지: AI 생성 이미지 ({백엔드}) · 특정 경기·인물이 아닌 연출 이미지`
        — `{백엔드}`는 JSON `"model"` 기준: `pollinations/flux`→"Pollinations", `gemini-*`→"Google Gemini"
    - `[CARD: ...]` → `![선수명 카드](./images/card-N.png)` + 다음 줄 캡션
-     `이미지: AI 생성 선수 카드 (Google Gemini) · 스탯은 실제 기록`
+     (3-C (3) 형식 — user-faces면 "얼굴 사진 사용자 제공", Commons면 저작자·라이선스)
    - 대표 이미지는 draft.md 최상단(제목 바로 아래)에 없다면 추가하거나,
      별도 안내 없이 `images/thumbnail.png`로만 저장해두고 draft.md 본문은
      건드리지 않는다 (draft.md 상단 구조를 임의로 재배치하지 않는다).
@@ -230,9 +241,11 @@
   Commons 실사진을 쓴다. `[PHOTO]`의 AI 생성은 특정 대상이 아닌 분위기·장면에만.
 - **`[PHOTO]` AI 분위기 컷에는 실존 선수의 식별 가능한 얼굴을 넣지 않는다.**
   실루엣·뒷모습·원거리·군중까지만. 구단 로고·스코어보드 텍스트도 금지.
-- **선수 얼굴이 드러나는 AI 이미지는 `[CARD: ...]` 선수 카드에서만** 만든다
-  (`gen_image.py --card`). 팬/에디토리얼 그래픽이고, 스탯은 research.md 기준
-  사실만, 표정은 경기력 반영이지 조롱이 아니다. 캡션에 "AI 생성 선수 카드" 명시.
+- **`[CARD: ...]` 선수 카드**는 `player-card` 템플릿에 얼굴 사진(user-faces
+  또는 Commons)을 넣어 만든다. 스탯은 research.md 기준 사실만, `평가`에 따라
+  밝게/어둡게 톤 처리. 얼굴 사진 출처를 캡션에 남긴다.
+- **`[PHOTO]` AI 분위기 컷에는 실존 선수 얼굴을 넣지 않는다** — 그건
+  `[CARD]` 전용. (크레딧 있으면 `gen_image.py --card` AI 카드도 가능.)
 - **글당 `[PHOTO: ...]` + `[CARD: ...]` 합쳐 최소 3장, 그래픽 카드 수 이상**을
   채우지 못한 채 넘기지 않는다 — 못 채웠으면 사용자에게 이유를 보고한다.
 - **그래픽 카드(`body-*.png`)는 최대 2장.** 순위표·스코어 요약 같은 진짜
@@ -251,7 +264,7 @@
 - `output/[주제]/images/thumbnail.png`
 - `output/[주제]/images/body-1.png`, `body-2.png`, ... (`[IMAGE: ...]` 개수만큼)
 - `output/[주제]/images/photo-1.jpg`, `photo-2.jpg`, ... (`[PHOTO: ...]` 개수만큼 — Commons 실사진 또는 `gen_image.py` AI 분위기 컷)
-- `output/[주제]/images/card-1.png`, `card-2.png`, ... (`[CARD: ...]` 개수만큼 — `gen_image.py --card` 선수 카드)
+- `output/[주제]/images/card-1.png`, `card-2.png`, ... (`[CARD: ...]` 개수만큼 — `player-card` 템플릿 선수 카드. face-N.jpg 는 캡처 후 삭제됨)
 - `[PHOTO]` + `[CARD]` 합쳐 최소 3장·그래픽 카드 수 이상
 - `output/[주제]/draft.md` (마커가 실제 이미지 경로 + 사진은 출처 캡션까지 반영된 상태)
 
