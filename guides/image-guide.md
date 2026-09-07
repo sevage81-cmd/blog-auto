@@ -84,6 +84,15 @@
    `agents/scripts/fetch_photo.py`(a) / `agents/scripts/gen_image.py`(b) /
    `agents/scripts/stylize_photo.py`(듀오톤 가공) 참고.
 
+6. **선수 카드** (`[CARD: ...]`) — 경기 결과 리뷰형 주제에서 리뷰 대상 경기마다
+   그 경기 핵심 선수 1명을 트레이딩 카드로. `guides/image-templates/player-card-ref.png`
+   스타일(선수 얼굴 + 이름 배너 + 큰 스탯 텍스트 + 등번호 + 구단 크레스트)을
+   따르며, **구단 최신 시즌 유니폼** + 평가에 맞는 표정(좋은 활약=밝게,
+   부진=어둡게)으로 `gen_image.py --card`가 생성한다. **Gemini 전용**이라
+   크레딧이 있어야 하고, 없으면 그 자리는 Commons 실사진(5-a)으로 대체된다.
+   팬/에디토리얼 그래픽이고 표시 스탯은 research.md 기준 사실만. 캡션에
+   "AI 생성 선수 카드 (Google Gemini)"를 밝힌다.
+
 ---
 
 ## 3. 공통 규칙
