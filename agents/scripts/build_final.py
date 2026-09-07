@@ -174,6 +174,11 @@ def build_html(title: str, blocks: list[str]) -> str:
         if block.startswith("#") and not block.startswith("# "):
             body_parts.append(f'<p class="tags">{html.escape(block, quote=False)}</p>')
             continue
+        # 이미지와 빈 줄로 떨어진 캡션("사진: ...", "이미지: AI 생성 ...")도
+        # .caption 으로. (이미지 바로 다음 줄이면 위 IMAGE_RE 블록에서 처리됨)
+        if re.match(r"^(사진|이미지)\s*[:·]", block) and "\n" not in block:
+            body_parts.append(f'<p class="caption">{inline_html(block)}</p>')
+            continue
         body_parts.append(f"<p>{inline_html(block)}</p>")
 
     body_html = "\n\n".join(body_parts)
@@ -202,8 +207,10 @@ def _selftest():
     html_out = build_html("제목", [
         "문단", "- 항목1\n- 항목2", "## 소제목", "### 더작은제목",
         "![alt](./x.png)", "![사진alt](./p.jpg)\n사진: 저작자 · CC BY · Wikimedia Commons (출처: https://x)",
+        "![loose](./l.jpg)", "이미지: AI 생성 이미지 (Pollinations) · 특정 경기·인물이 아닌 연출 이미지",
         "&nbsp;", "#태그1 #태그2",
     ])
+    assert '<p class="caption">이미지: AI 생성 이미지 (Pollinations) · 특정 경기·인물이 아닌 연출 이미지</p>' in html_out
     assert "<ul>" in html_out and "<li>항목1</li>" in html_out and "<li>항목2</li>" in html_out
     assert "<h2>소제목</h2>" in html_out
     assert "<h3>더작은제목</h3>" in html_out
