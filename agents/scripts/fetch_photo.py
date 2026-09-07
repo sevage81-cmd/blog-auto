@@ -21,6 +21,13 @@ import sys
 import urllib.parse
 import urllib.request
 
+# Windows 기본 stdout 인코딩(cp949)은 Commons 저작자명의 ü·é 같은 문자를 못 써서
+# json.dumps(ensure_ascii=False) 출력이 UnicodeEncodeError로 죽는다 → UTF-8 고정.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except AttributeError:  # py<3.7
+    pass
+
 API = "https://commons.wikimedia.org/w/api.php"
 UA = "blog-pipeline/1.0 (personal blog image sourcing; contact: n/a)"
 PHOTO_EXT = (".jpg", ".jpeg", ".png")
