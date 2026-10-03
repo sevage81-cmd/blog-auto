@@ -13,7 +13,9 @@ AI 이미지 생성 스크립트. 두 가지 용도.
    남긴다(image-make 에이전트 캡션 규칙).
 
 백엔드:
-- pollinations  — 무료, 키 불필요(Flux). 분위기 컷 기본값.
+- pollinations  — 분위기 컷 기본값. POLLINATIONS_API_KEY 있으면 gen.pollinations.ai
+                  (기본 모델 zimage, POLLINATIONS_MODEL 로 변경), 실패/키 없음이면
+                  키 없는 구 엔드포인트(Flux, 워터마크·저해상도)로 폴백.
 - gemini        — GEMINI_API_KEY + 결제 크레딧 필요. 분위기 컷은 429/402 시
                   pollinations 폴백. **선수 카드는 gemini 전용**(Flux는 텍스트·
                   얼굴·레이아웃을 못 맞춤) — 키 없거나 크레딧 없으면 에러.
@@ -50,6 +52,8 @@ for _s in (sys.stdout, sys.stderr):
 MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3-pro-image").strip()
 KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 BACKEND = os.environ.get("IMAGE_BACKEND", "").strip().lower()
+PKEY = os.environ.get("POLLINATIONS_API_KEY", "").strip()
+PMODEL = os.environ.get("POLLINATIONS_MODEL", "zimage").strip()
 
 CARD_REF = Path(__file__).resolve().parents[2] / "guides" / "image-templates" / "player-card-ref.png"
 
@@ -124,24 +128,36 @@ def _gemini_call(parts: list) -> bytes:
 
 def gen_pollinations(full_prompt: str, out_path: str, aspect: str, seed: int | None) -> None:
     w, h = dims_for(aspect)
-    url = ("https://image.pollinations.ai/prompt/"
-           + urllib.parse.quote(full_prompt, safe="")
-           + f"?width={w}&height={h}&nologo=true&model=flux&enhance=true")
-    if seed is not None:
-        url += f"&seed={seed}"
-    req = urllib.request.Request(url, headers={"User-Agent": "blog-pipeline/1"})
-    try:
-        with urllib.request.urlopen(req, timeout=180) as r:
-            raw = r.read()
-    except urllib.error.HTTPError as e:
-        die(f"pollinations HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:300]}")
-    except Exception as e:  # noqa: BLE001
-        die(f"pollinations {type(e).__name__}: {e}")
-    if len(raw) < 1000 or not raw[:3] == b"\xff\xd8\xff" and b"PNG" not in raw[:8]:
-        die(f"pollinations 응답이 이미지가 아님 ({len(raw)} bytes)")
+    q = urllib.parse.quote(full_prompt, safe="")
+    seed_q = f"&seed={seed}" if seed is not None else ""
+    # 1순위: 키 있는 gen.pollinations.ai (워터마크 없음, 모델 선택). 실패하면 키 없는 구 엔드포인트.
+    attempts = []
+    if PKEY:
+        attempts.append((f"https://gen.pollinations.ai/image/{q}?width={w}&height={h}&model={PMODEL}{seed_q}",
+                         {"Authorization": f"Bearer {PKEY}"}, PMODEL))
+    attempts.append((f"https://image.pollinations.ai/prompt/{q}?width={w}&height={h}&nologo=true&model=flux&enhance=true{seed_q}",
+                     {}, "flux"))
+    raw, used, err = b"", "", ""
+    for url, hdrs, used in attempts:
+        req = urllib.request.Request(url, headers={"User-Agent": "blog-pipeline/1", **hdrs})
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                raw = r.read()
+        except urllib.error.HTTPError as e:
+            err = f"HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:300]}"
+        except Exception as e:  # noqa: BLE001
+            err = f"{type(e).__name__}: {e}"
+        else:
+            if len(raw) >= 1000 and (raw[:3] == b"\xff\xd8\xff" or b"PNG" in raw[:8]):
+                break
+            err = f"응답이 이미지가 아님 ({len(raw)} bytes)"
+        raw = b""
+        sys.stderr.write(f"[gen_image] pollinations/{used} 실패 ({err})\n")
+    if not raw:
+        die(f"pollinations {err}")
     with open(out_path, "wb") as f:
         f.write(raw)
-    print(json.dumps({"path": out_path, "model": "pollinations/flux",
+    print(json.dumps({"path": out_path, "model": f"pollinations/{used}",
                       "prompt": full_prompt.split(". Aspect")[0]}, ensure_ascii=False))
 
 
