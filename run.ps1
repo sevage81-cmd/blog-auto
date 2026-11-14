@@ -117,6 +117,9 @@ $env:CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS = '1800000'
 # 예약 실행(-Today)이면 Chrome을 먼저 띄워 Claude in Chrome 확장이 연결되게 한다
 # (topic-pick가 에펨코리아를 실제 Chrome으로 읽어야 함). 이미 떠 있으면 건너뜀.
 if ($Today) {
+    # CLAUDE_CODE_OAUTH_TOKEN(사용자 환경변수)이 있으면 claude --chrome 연동이 꺼져 Chrome 도구가 NOTOOL이 된다(11/9~15 FALLBACK 원인, 2026-11-15 검증).
+    # 이 프로세스에서만 제거해 저장된 로그인 인증으로 실행한다. 로그인 만료 시 `claude auth login` 필요.
+    Remove-Item Env:CLAUDE_CODE_OAUTH_TOKEN -ErrorAction SilentlyContinue
     if (-not (Get-Process chrome -ErrorAction SilentlyContinue)) {
         $chromeExe = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
                        "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
