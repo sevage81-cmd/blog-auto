@@ -123,7 +123,16 @@ if ($Today) {
                        "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
         if ($chromeExe) { Start-Process $chromeExe -ArgumentList 'about:blank' }
     }
-    Start-Sleep -Seconds 45   # 확장 서비스워커·네이티브 호스트 연결 대기 (20초는 부족해 11/9~12 연결 실패)
+    # 확장 서비스워커·네이티브 호스트 연결 대기. PC 05:30 부팅 -> 05:34 catch-up 실행이라 부팅 직후엔 45초로 부족(11/9~15 연결 실패).
+    Start-Sleep -Seconds 30
+    # 연결될 때까지 프로브 폴링(최대 6회 ≈ 5분). 성공하면 즉시 진행, 끝까지 실패해도 파이프라인은 진행(topic-pick가 재시도/FALLBACK).
+    for ($i = 0; $i -lt 6; $i++) {
+        $job = Start-Job { Set-Location $using:blogDir; claude --chrome -p "ToolSearch로 'select:mcp__claude-in-chrome__tabs_context_mcp'를 시도. 도구가 나오면 호출해 OK 한 줄, 아니면 NOTOOL 한 줄만 출력." }
+        if (Wait-Job $job -Timeout 90) { $out = Receive-Job $job | Out-String } else { $out = '' ; Stop-Job $job }
+        Remove-Job $job -Force
+        if ($out -match 'OK' -and $out -notmatch 'NOTOOL') { break }
+        Start-Sleep -Seconds 30
+    }
 }
 
 try {
