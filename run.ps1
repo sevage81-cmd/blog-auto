@@ -123,7 +123,29 @@ if ($Today) {
                        "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
         if ($chromeExe) { Start-Process $chromeExe -ArgumentList 'about:blank' }
     }
-    Start-Sleep -Seconds 45   # 확장 서비스워커·네이티브 호스트 연결 대기 (20초는 부족해 11/9~12 연결 실패)
+    # 고정 대기 대신 실제 연결을 확인한다 (11/13·11/14 고정 45초로도 연결 실패 -> FALLBACK).
+    # claude --chrome -p 로 tabs_context_mcp 가 호출되는지 최대 6회(시도 간 30초) 확인하고, 결과를 chrome-wait.log 에 남긴다.
+    $cwLog = Join-Path $logDir 'chrome-wait.log'
+    function Write-CW($m) { "$(Get-Date -Format o)  $m" | Out-File -FilePath $cwLog -Encoding UTF8 -Append }
+    Write-CW ("start: chrome procs=" + @(Get-Process chrome -ErrorAction SilentlyContinue).Count)
+    Start-Sleep -Seconds 20
+    $probeQ = 'Load mcp__claude-in-chrome__tabs_context_mcp via ToolSearch and call it. Print CHROME_OK if the call succeeded, otherwise print NO_CHROME_TOOLS. Print nothing else.'
+    $chromeOk = $false
+    for ($i = 1; $i -le 6 -and -not $chromeOk; $i++) {
+        $po = Join-Path $logDir "chrome-probe_${stamp}.out"
+        $pe = Join-Path $logDir "chrome-probe_${stamp}.err"
+        $pp = Start-Process -FilePath 'claude' -ArgumentList "--chrome -p `"$probeQ`"" -WorkingDirectory $blogDir `
+                -WindowStyle Hidden -RedirectStandardOutput $po -RedirectStandardError $pe -PassThru
+        if (-not $pp.WaitForExit(90000)) { Stop-Process -Id $pp.Id -Force -ErrorAction SilentlyContinue; Write-CW "probe ${i}: timeout 90s" }
+        else {
+            $txt = (Get-Content $po -Raw -ErrorAction SilentlyContinue)
+            $chromeOk = ($txt -match 'CHROME_OK')
+            Write-CW ("probe ${i}: ok=$chromeOk out=" + ($txt -replace '\s+', ' ').Trim())
+        }
+        if (-not $chromeOk -and $i -lt 6) { Start-Sleep -Seconds 30 }
+    }
+    Write-CW "done: chromeOk=$chromeOk"
+    Remove-Item (Join-Path $logDir "chrome-probe_${stamp}.*") -ErrorAction SilentlyContinue
 }
 
 try {
